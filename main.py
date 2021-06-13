@@ -372,7 +372,6 @@ def rem_exec():
 
     def script_exe():
         print("U heeft de optie 'Script uitvoeren' gekozen")
-
     if optie == "1":
         inter_connec()
     elif optie == "2":
@@ -398,69 +397,15 @@ def monitoring():
     srvname_ip = b.read()
     b.close()
     srvname_ip = srvname_ip.split(",")
-    # 2 variabelen defineren om zometeen te itereren
-    i = 0
-    j = 0
     # hier komt ip adres terecht voor ssh connectie
     ipadres = ""
-    # bepalen type, vagrant box of normale server
+    # bepalen type machine, Windows of Linux
     type = ""
     password = ""
     username = ""
-    # itereren over alle vagrant boxes, indien variabele naam gelijk is aan een vagrantbox, wordt het ip adres van
-    # de vagrantbox opgeslagen in ip en wordt het type op vagrant gezet
-    while i < len(vagname_ip):
-        if naam == vagname_ip[i]:
-            ipadres = vagname_ip[i + 1]
-            type = "vagrant"
-            username = vagname_ip[i + 2]
-            password = vagname_ip[i + 3]
-            break
-        i = i + 1
-    # itereren over alle servers, indien variabele naam gelijk is aan een server, wordt het ip adres van de server
-    # opgeslagen in ip en wordt het type op normal gezet
-    while j < len(srvname_ip):
-        if naam == srvname_ip[j]:
-            ipadres = srvname_ip[j + 1]
-            type = "normal"
-            break
-        j = j + 1
-    # indien type vagrant is wordt de verbinding opgesteld met credentials van vagrantboxoesconfig.txt
-    if type == "vagrant":
-        os = input("Geef het operating system op: ")
-        os = os.lower()
-        connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=username, password=password,
-                                            secret="vagrant", port=22)
-        check = "y"
-        # while gebruiken om te kunnen blijven commando's sturen tot de user wilt stoppen
-        while check == "y" or check == "Y":
-            cmd = input("Geef een commando op: ")
-            print(connection.send_command(cmd))
-            check = input("Wilt u nog een commando invoeren Y/N: ")
-        connection.disconnect()
-        print("De verbinding met de server is nu afgesloten")
-    # indien type normal is wordt de verbinding opgesteld en wordt de username en wachtwoord gevraagd
-    # aan de gebruiker
-    elif type == "normal":
-        naam = input("Geef de SSH naam op: ")
-        wachtwoord = input("Geef het wachtwoord op: ")
-        os = input("Geef het operating system op: ")
-        os = os.lower()
-        connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=naam,
-                                            password=wachtwoord, port=22)
-        check = "y"
-        while check == "y" or check == "Y":
-            cmd = input("Geef een commando op: ")
-            print(connection.send_command(cmd))
-            check = input("Wilt u nog een commando invoeren Y/N: ")
-        connection.disconnect()
-        print("De verbinding met de server is nu afgesloten")
-    # indien de opgegeven naam niet gevonden werd in de vagrantboxes en normale server komt er een foutmelding
-    else:
-        print("Server: " + naam + " niet gevonden\nHet programma wordt nu verlaten")
-        exit()
+
     params = {
-        'device_type': 'Linux',
+        'device_type': type,
         'ip': ipadres,
         'username': username,
         'password': password,
