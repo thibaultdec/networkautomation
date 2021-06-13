@@ -372,6 +372,86 @@ def rem_exec():
 
     def script_exe():
         print("U heeft de optie 'Script uitvoeren' gekozen")
+        # naam server of vagrantbox opgeven
+        naam = input("Geef de naam van de vagrantbox of server op: ")
+        # alle vagrantbox namen ophalen
+        a = open('vagrantboxesconfig.txt')
+        vagname_ip = a.read()
+        a.close()
+        vagname_ip = vagname_ip.split(",")
+        # alle server namen ophalen
+        b = open('serversconfig.txt')
+        srvname_ip = b.read()
+        b.close()
+        srvname_ip = srvname_ip.split(",")
+        # 2 variabelen defineren om zometeen te itereren
+        i = 0
+        j = 0
+        # hier komt ip adres terecht voor ssh connectie
+        ipadres = ""
+        # bepalen type, vagrant box of normale server
+        type = ""
+        password = ""
+        username = ""
+        # itereren over alle vagrant boxes, indien variabele naam gelijk is aan een vagrantbox, wordt het ip adres van
+        # de vagrantbox opgeslagen in ip en wordt het type op vagrant gezet
+        while i < len(vagname_ip):
+            if naam == vagname_ip[i]:
+                ipadres = vagname_ip[i + 1]
+                type = "vagrant"
+                username = vagname_ip[i + 2]
+                password = vagname_ip[i + 3]
+                break
+            i = i + 1
+        # itereren over alle servers, indien variabele naam gelijk is aan een server, wordt het ip adres van de server
+        # opgeslagen in ip en wordt het type op normal gezet
+        while j < len(srvname_ip):
+            if naam == srvname_ip[j]:
+                ipadres = srvname_ip[j + 1]
+                type = "normal"
+                break
+            j = j + 1
+        # indien type vagrant is wordt de verbinding opgesteld met credentials van vagrantboxoesconfig.txt
+        if type == "vagrant":
+            os = input("Geef het operating system op: ")
+            os = os.lower()
+            connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=username, password=password,
+                                                secret="vagrant", port=22)
+            check = "y"
+            # while gebruiken om te kunnen blijven scripts uitvoeren tot de user wilt stoppen
+            while check == "y" or check == "Y":
+                script = input("Geef het uit te voeren script mee: ")
+                if os == "linux":
+                    print("./" + connection.send_command(script))
+                else:
+                    print(connection.send_command(script))
+                check = input("Wilt u nog een script uitvoeren Y/N: ")
+            connection.disconnect()
+            print("De verbinding met de server is nu afgesloten")
+        # indien type normal is wordt de verbinding opgesteld en wordt de username en wachtwoord gevraagd
+        # aan de gebruiker
+        elif type == "normal":
+            naam = input("Geef de SSH naam op: ")
+            wachtwoord = input("Geef het wachtwoord op: ")
+            os = input("Geef het operating system op: ")
+            os = os.lower()
+            connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=naam,
+                                                password=wachtwoord, port=22)
+            check = "y"
+            while check == "y" or check == "Y":
+                script = input("Geef een script mee: ")
+                if os == "linux":
+                    print("./" + connection.send_command(script))
+                else:
+                    print(connection.send_command(script))
+                check = input("Wilt u nog een script uitvoeren Y/N: ")
+            connection.disconnect()
+            print("De verbinding met de server is nu afgesloten")
+        # indien de opgegeven naam niet gevonden werd in de vagrantboxes en normale server komt er een foutmelding
+        else:
+            print("Server: " + naam + " niet gevonden\nHet programma wordt nu verlaten")
+            exit()
+
     if optie == "1":
         inter_connec()
     elif optie == "2":
@@ -400,12 +480,13 @@ def monitoring():
     # hier komt ip adres terecht voor ssh connectie
     ipadres = ""
     # bepalen type machine, Windows of Linux
-    type = ""
+    os = input("Geef het type operating system op (Windows of Linux: ")
+    os = os.lower()
     password = ""
     username = ""
 
     params = {
-        'device_type': type,
+        'device_type': os,
         'ip': ipadres,
         'username': username,
         'password': password,
@@ -427,38 +508,38 @@ def monitoring():
 
     def monitoring_disk_usage():
         print("U heeft de optie 'Monitoring van de Disk usage' gekozen")
-        if params[0] == "Windows":
+        if params[0] == "windows":
             # Powershell
             print(myssh.send_command("Get-PSDrive"))
-        elif params[0] == "Linux":
+        elif params[0] == "linux":
             print(myssh.send_command("sudo df -h"))
         else:
             print("Er is geen Windows of Linux machine beschikbaar op de host")
 
     def monitoring_CPU_usage():
         print("U heeft de optie 'Monitoring van de CPU usage' gekozen")
-        if params[0] == "Windows":
+        if params[0] == "windows":
             print(myssh.send_command("wmic cpu get loadpercentage"))
-        elif params[0] == "Linux":
+        elif params[0] == "linux":
             print(myssh.send_command("sudo top -b -n1 | grep 'Cpu(s)' | awk '{print $2 + $4}'"))
         else:
             print("Er is geen Windows of Linux machine beschikbaar op de host")
 
     def monitoring_RAM_usage():
         print("U heeft de optie 'Monitoring van de RAM usage' gekozen")
-        if params[0] == "Windows":
+        if params[0] == "windows":
             print("Total Memory: " + myssh.send_command("wmic ComputerSystem get TotalPhysicalMemory"))
             print("Available Memory: " + myssh.send_command("wmic OS get FreePhysicalMemory"))
-        elif params[0] == "Linux":
+        elif params[0] == "linux":
             print(myssh.send_command("sudo free"))
         else:
             print("Er is geen Windows of Linux machine beschikbaar op de host")
 
     def monitoring_active_processes():
         print("U heeft de optie 'Monitoring van de actieve processen' gekozen")
-        if params[0] == "Windows":
+        if params[0] == "windows":
             print(myssh.send_command("tasklist"))
-        elif params[0] == "Linux":
+        elif params[0] == "linux":
             print(myssh.send_command("sudo ps"))
         else:
             print("Er is geen Windows of Linux machine beschikbaar op de host")
