@@ -384,13 +384,278 @@ def rem_exec():
         print("Foutieve input")
         exit()
 
-    print("############################################################")
 def monitoring():
     print("U heeft de optie 'Monitoring van remote hosts' gekozen")
+    # naam server of vagrantbox opgeven
+    naam = input("Geef de naam van de vagrantbox of server op: ")
+    # alle vagrantbox namen ophalen
+    a = open('vagrantboxesconfig.txt')
+    vagname_ip = a.read()
+    a.close()
+    vagname_ip = vagname_ip.split(",")
+    # alle server namen ophalen
+    b = open('serversconfig.txt')
+    srvname_ip = b.read()
+    b.close()
+    srvname_ip = srvname_ip.split(",")
+    # 2 variabelen defineren om zometeen te itereren
+    i = 0
+    j = 0
+    # hier komt ip adres terecht voor ssh connectie
+    ipadres = ""
+    # bepalen type, vagrant box of normale server
+    type = ""
+    password = ""
+    username = ""
+    # itereren over alle vagrant boxes, indien variabele naam gelijk is aan een vagrantbox, wordt het ip adres van
+    # de vagrantbox opgeslagen in ip en wordt het type op vagrant gezet
+    while i < len(vagname_ip):
+        if naam == vagname_ip[i]:
+            ipadres = vagname_ip[i + 1]
+            type = "vagrant"
+            username = vagname_ip[i + 2]
+            password = vagname_ip[i + 3]
+            break
+        i = i + 1
+    # itereren over alle servers, indien variabele naam gelijk is aan een server, wordt het ip adres van de server
+    # opgeslagen in ip en wordt het type op normal gezet
+    while j < len(srvname_ip):
+        if naam == srvname_ip[j]:
+            ipadres = srvname_ip[j + 1]
+            type = "normal"
+            break
+        j = j + 1
+    # indien type vagrant is wordt de verbinding opgesteld met credentials van vagrantboxoesconfig.txt
+    if type == "vagrant":
+        os = input("Geef het operating system op: ")
+        os = os.lower()
+        connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=username, password=password,
+                                            secret="vagrant", port=22)
+        check = "y"
+        # while gebruiken om te kunnen blijven commando's sturen tot de user wilt stoppen
+        while check == "y" or check == "Y":
+            cmd = input("Geef een commando op: ")
+            print(connection.send_command(cmd))
+            check = input("Wilt u nog een commando invoeren Y/N: ")
+        connection.disconnect()
+        print("De verbinding met de server is nu afgesloten")
+    # indien type normal is wordt de verbinding opgesteld en wordt de username en wachtwoord gevraagd
+    # aan de gebruiker
+    elif type == "normal":
+        naam = input("Geef de SSH naam op: ")
+        wachtwoord = input("Geef het wachtwoord op: ")
+        os = input("Geef het operating system op: ")
+        os = os.lower()
+        connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=naam,
+                                            password=wachtwoord, port=22)
+        check = "y"
+        while check == "y" or check == "Y":
+            cmd = input("Geef een commando op: ")
+            print(connection.send_command(cmd))
+            check = input("Wilt u nog een commando invoeren Y/N: ")
+        connection.disconnect()
+        print("De verbinding met de server is nu afgesloten")
+    # indien de opgegeven naam niet gevonden werd in de vagrantboxes en normale server komt er een foutmelding
+    else:
+        print("Server: " + naam + " niet gevonden\nHet programma wordt nu verlaten")
+        exit()
+    params = {
+        'device_type': 'Linux',
+        'ip': ipadres,
+        'username': username,
+        'password': password,
+        'secret': password,
+        'port': '22'
+    }
+    myssh = netmiko.ConnectHandler(**params)
+
+    # Optiemenu voor monitoring
+    print("--------------------------")
+    print("1. Monitoring van de Disk usage")
+    print("2. Monitoring van de CPU usage")
+    print("3. Monitoring van de RAM usage")
+    print("4. Monitoring van de actieve processen")
+    print("5. Exit")
+    print("--------------------------")
+    optie = input("Kies optie 1/2/3/4/5: ")
+    print("--------------------------")
+
+    def monitoring_disk_usage():
+        print("U heeft de optie 'Monitoring van de Disk usage' gekozen")
+        if params[0] == "Windows":
+            # Powershell
+            print(myssh.send_command("Get-PSDrive"))
+        elif params[0] == "Linux":
+            print(myssh.send_command("sudo df -h"))
+        else:
+            print("Er is geen Windows of Linux machine beschikbaar op de host")
+
+    def monitoring_CPU_usage():
+        print("U heeft de optie 'Monitoring van de CPU usage' gekozen")
+        if params[0] == "Windows":
+            print(myssh.send_command("wmic cpu get loadpercentage"))
+        elif params[0] == "Linux":
+            print(myssh.send_command("sudo top -b -n1 | grep 'Cpu(s)' | awk '{print $2 + $4}'"))
+        else:
+            print("Er is geen Windows of Linux machine beschikbaar op de host")
+
+    def monitoring_RAM_usage():
+        print("U heeft de optie 'Monitoring van de RAM usage' gekozen")
+        if params[0] == "Windows":
+            print("Total Memory: " + myssh.send_command("wmic ComputerSystem get TotalPhysicalMemory"))
+            print("Available Memory: " + myssh.send_command("wmic OS get FreePhysicalMemory"))
+        elif params[0] == "Linux":
+            print(myssh.send_command("sudo free"))
+        else:
+            print("Er is geen Windows of Linux machine beschikbaar op de host")
+
+    def monitoring_active_processes():
+        print("U heeft de optie 'Monitoring van de actieve processen' gekozen")
+        if params[0] == "Windows":
+            print(myssh.send_command("tasklist"))
+        elif params[0] == "Linux":
+            print(myssh.send_command("sudo ps"))
+        else:
+            print("Er is geen Windows of Linux machine beschikbaar op de host")
+
+    if optie == "1":
+        monitoring_disk_usage()
+    elif optie == "2":
+        monitoring_CPU_usage()
+    elif optie == "3":
+        monitoring_RAM_usage()
+    elif optie == "4":
+        monitoring_active_processes()
+    elif optie == "5":
+        print("Het programma wordt nu verlaten")
+        exit()
+    else:
+        print("Foutieve input")
+        exit()
+
+    print("############################################################")
 
 
 def setup_arch():
     print("U heeft de optie 'Predefined architecture opzetten in Vagrant' gekozen")
+    print("--------------------------")
+    print("1. Lamp installatie")
+    print("2. Windows met Git en Chrome")
+    print("3. Exit")
+    print("--------------------------")
+    optie = input("Kies optie 1/2/3: ")
+    print("--------------------------")
+
+    def lamp():
+        path = input("Naar welke map wil je de Lamp vagrantfile kopiëren?")
+        os.mkdir(path)
+        vf = open(path + "/VagrantFileLamp", "a")
+        vf.write("# -*- mode: ruby -*-\n"
+                 "# vi: set ft=ruby :\n"
+                 "\n"
+                 "# Edit these\n"
+                 "hostname            = \"vagrant.dev\"\n"
+                 "server_ip           = \"192.168.33.10\"\n"
+                 "mysql_root_password = \"root\"\n"
+                 "\n"
+                 "\n"
+                 "Vagrant.configure(2) do |config|\n"
+                 "# OS to install on VM\n"
+                 "config.vm.box = \"ubuntu/trusty64\"\n"
+                 "\n"
+                 "# Map local port 8080 to VM port 80\n"
+                 "config.vm.network \"forwarded_port\", guest: 80, host: 8080\n"
+                 "\n"
+                 "# IP to access VM\n"
+                 "config.vm.network \"private_network\", ip: server_ip\n"
+                 "\n"
+                 "# Set up default hostname\n"
+                 "config.vm.hostname = hostname\n"
+                 "\n"
+                 "# Sync current directory to \"/var/www\" directory on the VM\n"
+                 "# also set sync implementation to NFS for better performance,\n"
+                 "# if running on Windows or a non-NFS supported system just\n"
+                 "# remove the last \",\" and the next 3 lines\n"
+                 "config.vm.synced_folder \".\", \"/var/www\",\n"
+                 "id: \"core\",\n"
+                 ":nfs => true,\n"
+                 ":mount_options => ['nolock,vers=3,udp,noatime']\n"
+                 "\n"
+                 "config.vm.provider \"virtualbox\" do |vb|\n"
+                 "# Set VM name\n"
+                 "vb.name = \"Vagrant Dev\"\n"
+                 "\n"
+                 "# Customize the amount of memory on the VM\n"
+                 "vb.memory = \"1024\"\n"
+                 "\n"
+                 "# Customize # of CPUs\n"
+                 "vb.cpus = 1\n"
+                 "\n"
+                 "# Set the timesync threshold to 10 seconds, instead of the default 20 minutes.\n"
+                 "# If the clock gets more than 15 minutes out of sync (due to your laptop going\n"
+                 "# to sleep for instance) then some 3rd party services will reject requests.\n"
+                 "vb.customize [\"guestproperty\", \"set\", :id, \"/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold\", 10000]\n"
+                 "\n"
+                 "# Prevent VMs running on Ubuntu to lose internet connection\n"
+                 "vb.customize [\"modifyvm\", :id, \"--natdnshostresolver1\", \"on\"]\n"
+                 "vb.customize [\"modifyvm\", :id, \"--natdnsproxy1\", \"on\"]\n"
+                 "end\n"
+                 "\n"
+                 "# Update repository\n"
+                 "config.vm.provision \"shell\", inline: \"sudo apt-get update\"\n"
+                 "\n"
+                 "# Install base utilities\n"
+                 "config.vm.provision \"shell\", inline: \"sudo apt-get install -qq curl unzip git-core ack-grep software-properties-common build-essential\"\n"
+                 "\n"
+                 "# Install basic LAMP stack\n"
+                 "# Apache\n"
+                 "config.vm.provision \"shell\", inline: \"sudo apt-get install -qq apache2\"\n"
+                 "# Enable mod_rewrite\n"
+                 "config.vm.provision \"shell\", inline: \"sudo a2enmod rewrite\"\n"
+                 "# Restart Apache\n"
+                 "config.vm.provision \"shell\", inline: \"sudo service apache2 restart\"\n"
+                 "\n"
+                 "# PHP\n"
+                 "config.vm.provision \"shell\", inline: \"sudo apt-get install -qq php5 php5-mysql php5-curl php5-gd php5-gmp php5-mcrypt php5-intl\"\n"
+                 "# Enable mcrypt\n"
+                 "config.vm.provision \"shell\", inline: \"sudo php5enmod mcrypt\"\n"
+                 "# Restart Apache\n"
+                 "config.vm.provision \"shell\", inline: \"sudo service apache2 restart\"\n"
+                 "\n"
+                 "# MySQL\n"
+                 "# Set username and password to 'root'\n"
+                 "config.vm.provision \"shell\", inline: \"sudo debconf-set-selections <<< \\\"mysql-server mysql-server/root_password password #{mysql_root_password}\\\"\"\n"
+                 "config.vm.provision \"shell\", inline: \"sudo debconf-set-selections <<< \\\"mysql-server mysql-server/root_password_again password #{mysql_root_password}\\\"\"\n"
+                 "\n"
+                 "# Install MySQL\n"
+                 "config.vm.provision \"shell\", inline: \"sudo apt-get install -qq mysql-server\"\n"
+                 "\n"
+                 "# Adding grant privileges to mysql root user from everywhere\n"
+                 "# http://stackoverflow.com/questions/7528967/how-to-grant-mysql-privileges-in-a-bash-script\n"
+                 "Q1  = \"GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '#{mysql_root_password}' WITH GRANT OPTION;\"\n"
+                 "Q2  = \"FLUSH PRIVILEGES;\"\n"
+                 "SQL = \"#{Q1}#{Q2}\"\n"
+                 "\n"
+                 "config.vm.provision \"shell\", inline: \"mysql -uroot -p#{mysql_root_password} -e \"#{SQL}\\\"\"\n"
+                 "\n"
+                 "end\n")
+
+    def windows_git_chrome():
+        print("Naar welke map wil je de Windows met Git en Chrome vagrantfile kopiëren?")
+        input()
+
+    if optie == "1":
+        lamp()
+    elif optie == "2":
+        windows_git_chrome()
+    elif optie == "3":
+        print("Het programma wordt nu verlaten")
+        exit()
+    else:
+        print("Foutieve input")
+        exit()
+
+    print("############################################################")
 
 
 # optiemenu met hierin verwijzing naar commando
