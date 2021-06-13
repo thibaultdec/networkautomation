@@ -168,7 +168,7 @@ def vagr_box():
                 os.chdir(box)
                 # met python-vagrant de box opstarten
                 v = vagrant.Vagrant()
-                v.halt()
+                v.up()
                 # aantonen dat de box is opgestart
                 print("De volgende Vagrant box is nu opgestart: " + box)
                 # terug naar de algemene directory gaan, belangrijk indien er nog een box opgestart moet worden
@@ -340,7 +340,7 @@ def rem_exec():
             os = input("Geef het operating system op: ")
             os = os.lower()
             connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=username, password=password,
-                                                secret="vagrant", port=22)
+                                                secret="vagrant")
             check = "y"
             # while gebruiken om te kunnen blijven commando's sturen tot de user wilt stoppen
             while check == "y" or check == "Y":
@@ -357,7 +357,7 @@ def rem_exec():
             os = input("Geef het operating system op: ")
             os = os.lower()
             connection = netmiko.ConnectHandler(ip=ipadres, device_type=os, username=naam,
-                                                password=wachtwoord, port=22)
+                                                password=wachtwoord)
             check = "y"
             while check == "y" or check == "Y":
                 cmd = input("Geef een commando op: ")
