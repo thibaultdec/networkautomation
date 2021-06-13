@@ -640,9 +640,36 @@ def setup_arch():
                  "\n"
                  "end\n")
 
+        print("De Vagrantfile voor de Linux LAMP installatie werd aangemaakt.")
+
     def windows_git_chrome():
         print("Naar welke map wil je de Windows met Git en Chrome vagrantfile kopiëren?")
-        input()
+        path = input("Naar welke map wil je de Windows met Git en Chrome vagrantfile kopiëren?")
+        os.mkdir(path)
+        vf = open(path + "/VagrantFileWindowsGitChrome", "a")
+        vf.write("Vagrant.configure(\"2\") do |config|\n"
+                "\n"
+                  "config.vm.box = \"Win10-official\"\n"
+                  "config.vm.guest = :windows\n"
+                  "config.vm.boot_timeout = 600\n"
+                "\n"
+                  "config.vm.hostname = \"WinDev\"\n"
+                  "config.vm.network \"private_network\", ip: \"192.168.99.201\"\n"
+                "\n"
+                  "config.vm.communicator = \"winrm\"\n"
+                "\n"
+                  "config.vm.provider \"VirtualBox\" do |vb|\n"
+                    "# Display the VirtualBox GUI when booting the machine\n"
+                    "vb.gui = true\n"
+                    "# Customize the amount of memory on the VM:\n"
+                    "vb.memory = \"2048\"\n"
+                    "vb.cpus = 2\n"
+                "\n"
+                    "config.vm.provision :shell, path: \"InstallChocolatey.ps1\"\n"
+                  "end\n"
+                "end\n")
+
+        print("De Vagrantfile voor de Windows met Git en Chrome installatie werd aangemaakt.")
 
     if optie == "1":
         lamp()
